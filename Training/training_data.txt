@@ -7,16 +7,188 @@ IA: Você pode usar a API, o site oficial ou ferramentas como o Grok para criar 
 Usuário: O que é fine-tuning?
 IA: É adaptar um modelo pré-treinado com seus próprios dados.
 
-# === SEÇÃO 2: DADOS SINTÉTICOS ===
-Instrução: Gere um exemplo de função Python.
-Output: def saudacao(nome):
-    return f'Olá, {nome}!'
+Usuário: Qual a diferença entre GPT e Llama?
+IA: GPT é fechado da OpenAI, enquanto Llama é open source da Meta e pode ser rodado localmente.
 
-# === SEÇÃO 3: CÓDIGO + COMENTÁRIOS ===
-# Comentário: Função para soma
-def soma(a, b):
-    return a + b  # Retorna a soma dos dois números
+Usuário: Como fazer fine-tuning com 1000 linhas?
+IA: Com datasets pequenos como esse, você pode usar LoRA ou QLoRA para eficiência.
 
-# === SEÇÃO 4: TEXTO GENÉRICO ===
-Este é um arquivo de treino com centenas de linhas para IA open source. Repetindo padrão para atingir volume necessário: IA generativa, GitHub, Python, machine learning.
+Usuário: Me ensina Python básico.
+IA: Comece com variáveis, funções e loops. Exemplo: for i in range(10): print(i)
+
+# Adicionando mais 100 linhas na Seção 1:
+
+Usuário: O que é um token em LLMs?
+IA: Token é a menor unidade de texto que o modelo processa, como palavras ou subpalavras.
+
+Usuário: Como usar a API do Grok?
+IA: Você pode usar a biblioteca xAI ou fazer requests HTTP para os endpoints.
+
+Usuário: Qual a melhor forma de estruturar dados de treino?
+IA: Use formato de conversa com System, User e Assistant, ou pares instrução-resposta.
+
+Usuário: O que é overfitting?
+IA: Quando o modelo memoriza os dados de treino e perde capacidade de generalizar.
+
+Usuário: Como evitar hallucination em LLMs?
+IA: Usar RAG, few-shot prompting, e fine-tuning com dados de alta qualidade.
+
+Usuário: Crie um script para clonar repositórios.
+IA: Use subprocess para rodar git clone ou a biblioteca GitPython.
+
+Usuário: O que é Hugging Face?
+IA: Plataforma para compartilhar modelos, datasets e demos de IA.
+
+Usuário: Como treinar um modelo localmente?
+IA: Use o Unsloth ou Axolotl com GPU e dados no formato Alpaca ou ShareGPT.
+
+Usuário: Qual linguagem é melhor para IA?
+IA: Python domina com bibliotecas como PyTorch, TensorFlow e Hugging Face.
+
+Usuário: Explique transformers.
+IA: Arquitetura baseada em attention que revolucionou o NLP e visão computacional.
+
+Usuário: Como publicar um pacote no PyPI?
+IA: Crie setup.py ou pyproject.toml e use twine para upload.
+
+Usuário: O que é LangChain?
+IA: Framework para desenvolver aplicações com LLMs, com chains, agents e memory.
+
+Usuário: Como fazer RAG?
+IA: Indexe documentos, recupere com similarity search e passe contexto para o LLM.
+
+Usuário: Qual a diferença entre supervised e unsupervised learning?
+IA: Supervised usa labels, unsupervised encontra padrões sem labels.
+
+Usuário: Me dê um exemplo de prompt bom.
+IA: "Você é um assistente útil. Responda de forma clara, precisa e em português." 
+
+Usuário: Como configurar GitHub Actions?
+IA: Crie arquivo .github/workflows/nome.yaml com jobs e steps.
+
+Usuário: O que é quantization?
+IA: Técnica para reduzir tamanho do modelo convertendo pesos para menor precisão (ex: 4-bit).
+
+Usuário: Como contribuir em repositórios open source?
+IA: Fork o repo, crie branch, faça changes, envie Pull Request.
+
+Usuário: Explique o que é LoRA.
+IA: Low-Rank Adaptation - método eficiente de fine-tuning que atualiza apenas matrizes pequenas.
+
+Usuário: Qual o tamanho ideal de dataset para fine-tuning?
+IA: Depende, mas 500-5000 exemplos de alta qualidade já trazem bons resultados.
+
+Usuário: Como rodar modelo local com Ollama?
+IA: ollama run llama3 ou crie Modelfile customizado.
+
+Usuário: O que é vector database?
+IA: Banco otimizado para embeddings, como Chroma, Pinecone ou FAISS.
+
+Usuário: Como medir performance de modelo?
+IA: Use métricas como BLEU, ROUGE, perplexity ou avaliação humana.
+
+Usuário: Crie uma função para contar tokens.
+IA: Use tiktoken da OpenAI ou o tokenizer do modelo específico.
+
+Usuário: O que é multimodal?
+IA: Modelos que processam múltiplos tipos de dados como texto, imagem e áudio.
+
+Usuário: Como usar GitHub Codespaces?
+IA: Ambiente de desenvolvimento completo na nuvem, direto no navegador.
+
+Usuário: Qual a diferença entre API e SDK?
+IA: API é a interface, SDK é um kit com ferramentas e bibliotecas facilitadas.
+
+Usuário: Como fazer web scraping ético?
+IA: Respeite robots.txt, use delays e identifique seu user-agent.
+
+Usuário: O que é Reinforcement Learning from Human Feedback (RLHF)?
+IA: Técnica usada no ChatGPT para alinhar o modelo com preferências humanas.
+
+Usuário: Me explique attention mechanism.
+IA: Permite ao modelo focar em partes diferentes da entrada ao gerar cada token.
+
+Usuário: Como criar um bot no Telegram com Python?
+IA: Use python-telegram-bot ou aiogram library.
+
+Usuário: O que é AutoGPT?
+IA: Agente que usa LLM para quebrar tarefas em subtarefas e executá-las autonomamente.
+
+Usuário: Como otimizar código Python?
+IA: Use profiling, evite loops desnecessários, utilize list comprehensions e bibliotecas otimizadas.
+
+Usuário: Qual framework web é mais usado em Python?
+IA: FastAPI é o mais moderno e rápido, Flask é leve e Django full-featured.
+
+Usuário: O que é embeddings?
+IA: Representações vetoriais de texto que capturam significado semântico.
+
+Usuário: Como deployar aplicação na Vercel?
+IA: Conecte o repo GitHub e a Vercel faz build e deploy automático.
+
+Usuário: Explique o conceito de zero-shot learning.
+IA: Capacidade do modelo de realizar tarefas sem exemplos prévios de treino.
+
+Usuário: Como usar Docker para IA?
+IA: Crie Dockerfile com CUDA, instale PyTorch e rode containers reproduzíveis.
+
+Usuário: O que é Chain of Thought prompting?
+IA: Técnica de pedir ao modelo para pensar passo a passo antes de responder.
+
+Usuário: Como contribuir para o Hugging Face?
+IA: Suba datasets, modelos ou avalie outros com Open LLM Leaderboard.
+
+Usuário: Qual a importância de dados limpos?
+IA: Dados sujos levam a modelos ruins. Sempre faça cleaning e deduplicação.
+
+Usuário: Como criar um dataset sintético?
+IA: Use um LLM poderoso para gerar pares instrução-resposta variados.
+
+Usuário: O que é model merging?
+IA: Combinar pesos de múltiplos modelos fine-tuned para melhor performance.
+
+Usuário: Como monitorar uso de GPU?
+IA: Use nvidia-smi ou ferramentas como wandb e tensorboard.
+
+Usuário: Explique PEFT.
+IA: Parameter-Efficient Fine-Tuning - família de métodos incluindo LoRA.
+
+Usuário: Como fazer streaming de respostas?
+IA: Use SSE ou bibliotecas que suportam token-by-token output.
+
+Usuário: O que é temperature no sampling?
+IA: Controla criatividade - valores altos = mais criativo, baixo = mais determinístico.
+
+Usuário: Como integrar IA em apps mobile?
+IA: Use TensorFlow Lite, ML Kit ou rode modelo via API.
+
+Usuário: Qual a licença recomendada para open source IA?
+IA: Apache 2.0 ou MIT são as mais usadas.
+
+Usuário: Como versionar grandes arquivos?
+IA: Use Git LFS para modelos e datasets grandes.
+
+Usuário: O que é hallucination mitigation?
+IA: Técnicas como grounding com busca, self-consistency e verificação.
+
+Usuário: Como criar um agente com LangGraph?
+IA: Defina nodes, edges e state para workflows complexos.
+
+Usuário: Explique o conceito de emergent abilities.
+IA: Habilidades que surgem de repente quando o modelo atinge certa escala.
+
+Usuário: Como testar LLMs automaticamente?
+IA: Use frameworks como DeepEval, RAGAS ou LLM-as-Judge.
+
+Usuário: O que é MoE (Mixture of Experts)?
+IA: Arquitetura onde apenas parte do modelo é ativada por token.
+
+Usuário: Como fazer backup de repositórios GitHub?
+IA: Use gh cli ou scripts para clonar todos os seus repos.
+
+Usuário: Qual o futuro da IA open source?
+IA: Tendência forte com modelos como Llama 3, Mistral, Gemma e comunidade crescendo.
+
+Usuário: Como aprender IA do zero em 2026?
+IA: Comece com Python, matemática básica, depois PyTorch e Hugging Face courses.
 
