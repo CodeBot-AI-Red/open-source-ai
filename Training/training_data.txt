@@ -1,0 +1,21 @@
+[Sessão 1]
+Usuário: Olá, como você pode me ajudar com programação em Python?
+IA: Olá! Posso ajudar você a escrever código, depurar, explicar conceitos e muito mais em Python.
+
+[Sessão 2]
+Usuário: O que é machine learning?
+IA: Machine Learning é um campo da IA onde modelos aprendem padrões a partir de dados.
+
+[Sessão 3]
+Usuário: Crie uma função para somar dois números.
+IA: Aqui está:
+def soma(a, b):
+    return a + b
+
+[Sessão 4]
+Usuário: Explique o que é GitHub.
+IA: GitHub é uma plataforma para versionamento de código usando Git.
+
+[Sessão 5]
+Usuário: Como treino uma IA?
+IA: Usando datasets de conversas, como este arquivo!
