@@ -6,13 +6,24 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api.core.config import settings
+from api.middleware.cors import CORSMiddleware  # customizado
 from api.middleware.logging import LoggingMiddleware
 from api.middleware.rate_limit import RateLimitMiddleware
-from api.routes import health, image_analysis, speech_to_text, text_analysis, text_generation
+from api.middleware.request_id import RequestIDMiddleware  # novo
+from api.routes import (
+    health,
+    image_analysis,
+    speech_to_text,
+    text_analysis,
+    text_generation,
+    summarization,  # novo
+)
+from api.auth.jwt_handler import verify_jwt
+from api.auth.api_key_manager import verify_api_key
+from api.core.dependencies import AuthDependency  # se existir, ou criar
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -32,7 +43,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("🚀 Iniciando IA Open Source API v%s", settings.PROJECT_VERSION)
 
-    # Verifica conectividade com os serviços internos de forma não-bloqueante
+    # Verifica conectividade com os serviços internos
     services = {
         "nlp": settings.NLP_SERVICE_URL,
         "llm": settings.LLM_SERVICE_URL,
@@ -40,17 +51,23 @@ async def lifespan(app: FastAPI):
         "speech": settings.SPEECH_SERVICE_URL,
         "summarizer": settings.SUMMARIZER_SERVICE_URL,
     }
-    async with httpx.AsyncClient(timeout=3.0) as client:
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
         for name, url in services.items():
             try:
                 r = await client.get(f"{url}/health")
                 if r.status_code == 200:
                     logger.info("  ✅ Serviço '%s' acessível em %s", name, url)
                 else:
-                    logger.warning("  ⚠️  Serviço '%s' retornou status %s", name, r.status_code)
-            except Exception:
-                logger.warning("  ⚠️  Serviço '%s' não está acessível em %s", name, url)
+                    logger.warning(
+                        "  ⚠️  Serviço '%s' retornou status %s", name, r.status_code
+                    )
+            except Exception as e:
+                logger.warning(
+                    "  ⚠️  Serviço '%s' não está acessível em %s: %s", name, url, str(e)
+                )
 
+    logger.info("📦 Aplicação pronta para receber requisições.")
     yield
 
     logger.info("🛑 Encerrando IA Open Source API — recursos liberados.")
@@ -64,8 +81,9 @@ app = FastAPI(
     version=settings.PROJECT_VERSION,
     description=(
         "API central do IA Open Source. Oferece endpoints unificados para "
-        "análise de texto, geração de texto (LLM), visão computacional e "
-        "transcrição de áudio, com autenticação JWT/API-Key e rate limiting."
+        "análise de texto, geração de texto (LLM), visão computacional, "
+        "transcrição de áudio e sumarização, com autenticação JWT/API-Key "
+        "e rate limiting."
     ),
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
@@ -76,15 +94,56 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # Middlewares (ordem importa: último adicionado = primeiro executado)
 # ---------------------------------------------------------------------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(RequestIDMiddleware)  # adiciona request_id
+app.add_middleware(CORSMiddleware)       # customizado
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(LoggingMiddleware)
+
+
+# ---------------------------------------------------------------------------
+# Dependência de autenticação global (opcional, pode ser aplicada por rota)
+# ---------------------------------------------------------------------------
+async def auth_dependency(request: Request):
+    """
+    Verifica se a requisição possui um token JWT válido ou uma API Key válida.
+    Se a autenticação estiver desabilitada (settings.ENABLE_AUTH=False), passa sem verificação.
+    """
+    if not settings.ENABLE_AUTH:
+        return True
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cabeçalho Authorization ausente",
+        )
+
+    # Tenta JWT
+    if auth_header.startswith("Bearer "):
+        token = auth_header[len("Bearer ") :]
+        if verify_jwt(token):
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token JWT inválido ou expirado",
+            )
+
+    # Tenta API Key (formato: "ApiKey <key>")
+    if auth_header.startswith("ApiKey "):
+        api_key = auth_header[len("ApiKey ") :]
+        if verify_api_key(api_key):
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API Key inválida",
+            )
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Formato de autenticação não suportado",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +156,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={
             "error": "validation_error",
             "detail": exc.errors(),
-            "request_id": request.state.request_id if hasattr(request.state, "request_id") else None,
+            "request_id": getattr(request.state, "request_id", None),
+        },
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.detail,
+            "request_id": getattr(request.state, "request_id", None),
         },
     )
 
@@ -120,11 +190,25 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # ---------------------------------------------------------------------------
 v1 = settings.API_V1_STR
 
+# Rotas públicas (sem autenticação)
 app.include_router(health.router, prefix=v1, tags=["Health"])
-app.include_router(text_analysis.router, prefix=f"{v1}/analysis", tags=["Text Analysis"])
-app.include_router(text_generation.router, prefix=f"{v1}/generation", tags=["Text Generation"])
-app.include_router(image_analysis.router, prefix=f"{v1}/vision", tags=["Image Analysis"])
-app.include_router(speech_to_text.router, prefix=f"{v1}/speech", tags=["Speech to Text"])
+
+# Rotas protegidas (com autenticação via dependência)
+protected_routers = [
+    (text_analysis.router, f"{v1}/analysis", "Text Analysis"),
+    (text_generation.router, f"{v1}/generation", "Text Generation"),
+    (image_analysis.router, f"{v1}/vision", "Image Analysis"),
+    (speech_to_text.router, f"{v1}/speech", "Speech to Text"),
+    (summarization.router, f"{v1}/summarization", "Summarization"),  # nova rota
+]
+
+for router, prefix, tag in protected_routers:
+    app.include_router(
+        router,
+        prefix=prefix,
+        tags=[tag],
+        dependencies=[Depends(auth_dependency)],  # aplica autenticação
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -136,4 +220,5 @@ async def root():
         "service": settings.PROJECT_NAME,
         "version": settings.PROJECT_VERSION,
         "docs": f"{v1}/docs",
+        "health": f"{v1}/health",
     }
