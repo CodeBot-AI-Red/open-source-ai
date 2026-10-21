@@ -13,14 +13,10 @@ from starlette.middleware.cors import CORSMiddleware
 from api.middleware.cors import cors_kwargs
 from api.middleware.logging import LoggingMiddleware
 from api.middleware.rate_limit import RateLimitMiddleware
-from api.middleware.request_id import RequestIDMiddleware  # novo
+from api.middleware.request_id import RequestIDMiddleware
 from api.routes import (
     health,
-    image_analysis,
-    speech_to_text,
-    text_analysis,
-    text_generation,
-    summarization,  # novo
+    manga_anime,
 )
 from api.auth.jwt_handler import decode_access_token
 from api.auth.api_key_manager import verify_api_key_hash
@@ -41,15 +37,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Iniciando IA Open Source API v%s", settings.PROJECT_VERSION)
+    logger.info("🚀 Iniciando Manga & Anime Image Generation API v%s", settings.PROJECT_VERSION)
 
-    # Verifica conectividade com os serviços internos
     services = {
-        "nlp": settings.NLP_SERVICE_URL,
-        "llm": settings.LLM_SERVICE_URL,
-        "vision": settings.VISION_SERVICE_URL,
-        "speech": settings.SPEECH_SERVICE_URL,
-        "summarizer": settings.SUMMARIZER_SERVICE_URL,
+        "manga_anime_generator": settings.MANGA_ANIME_SERVICE_URL,
     }
 
     async with httpx.AsyncClient(timeout=5.0) as client:
@@ -59,18 +50,14 @@ async def lifespan(app: FastAPI):
                 if r.status_code == 200:
                     logger.info("  ✅ Serviço '%s' acessível em %s", name, url)
                 else:
-                    logger.warning(
-                        "  ⚠️  Serviço '%s' retornou status %s", name, r.status_code
-                    )
+                    logger.warning("  ⚠️  Serviço '%s' retornou status %s", name, r.status_code)
             except Exception as e:
-                logger.warning(
-                    "  ⚠️  Serviço '%s' não está acessível em %s: %s", name, url, str(e)
-                )
+                logger.warning("  ⚠️  Serviço '%s' não está acessível em %s: %s", name, url, str(e))
 
-    logger.info("📦 Aplicação pronta para receber requisições.")
+    logger.info("📦 IA Especializada em Mangá e Anime pronta para receber requisições.")
     yield
 
-    logger.info("🛑 Encerrando IA Open Source API — recursos liberados.")
+    logger.info("🛑 Encerrando Manga & Anime API — recursos liberados.")
 
 
 # ---------------------------------------------------------------------------
@@ -80,10 +67,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
     description=(
-        "API central do IA Open Source. Oferece endpoints unificados para "
-        "análise de texto, geração de texto (LLM), visão computacional, "
-        "transcrição de áudio e sumarização, com autenticação JWT/API-Key "
-        "e rate limiting."
+        "API Enterprise dedicada exclusivamente à geração de imagens, ilustrações, "
+        "personagens e páginas no estilo Mangá e Anime com parametrização avançada "
+        "(Shonen, Shojo, Seinen, Chibi, Cyberpunk, 90s Retro, Retículas, Samplers e Upscaling)."
     ),
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
@@ -92,22 +78,18 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# Middlewares (ordem importa: último adicionado = primeiro executado)
+# Middlewares
 # ---------------------------------------------------------------------------
-app.add_middleware(RequestIDMiddleware)  # adiciona request_id
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(CORSMiddleware, **cors_kwargs())
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(LoggingMiddleware)
 
 
 # ---------------------------------------------------------------------------
-# Dependência de autenticação global (opcional, pode ser aplicada por rota)
+# Dependência de autenticação global
 # ---------------------------------------------------------------------------
 async def auth_dependency(request: Request):
-    """
-    Verifica se a requisição possui um token JWT válido ou uma API Key válida.
-    Se a autenticação estiver desabilitada (settings.ENABLE_AUTH=False), passa sem verificação.
-    """
     auth_header = request.headers.get("Authorization")
     if not auth_header:
         raise HTTPException(
@@ -182,25 +164,16 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # ---------------------------------------------------------------------------
 v1 = settings.API_V1_STR
 
-# Rotas públicas (sem autenticação)
+# Rotas públicas
 app.include_router(health.router, prefix=v1, tags=["Health"])
 
-# Rotas protegidas (com autenticação via dependência)
-protected_routers = [
-    (text_analysis.router, f"{v1}/analysis", "Text Analysis"),
-    (text_generation.router, f"{v1}/generation", "Text Generation"),
-    (image_analysis.router, f"{v1}/vision", "Image Analysis"),
-    (speech_to_text.router, f"{v1}/speech", "Speech to Text"),
-    (summarization.router, f"{v1}/summarization", "Summarization"),  # nova rota
-]
-
-for router, prefix, tag in protected_routers:
-    app.include_router(
-        router,
-        prefix=prefix,
-        tags=[tag],
-        dependencies=[Depends(auth_dependency)],  # aplica autenticação
-    )
+# Rotas protegidas (Manga & Anime Generator)
+app.include_router(
+    manga_anime.router,
+    prefix=f"{v1}/manga-anime",
+    tags=["Manga & Anime Generation"],
+    dependencies=[Depends(auth_dependency)],
+)
 
 
 # ---------------------------------------------------------------------------

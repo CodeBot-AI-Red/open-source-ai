@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Projeto
     # ------------------------------------------------------------------
-    PROJECT_NAME: str = "IA Open Source API"
-    PROJECT_VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "IA Open Source Manga & Anime Generator API"
+    PROJECT_VERSION: str = "3.0.0"
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
@@ -51,17 +51,13 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # URLs dos serviços internos
     # ------------------------------------------------------------------
-    NLP_SERVICE_URL: str = "http://nlp_service:8001"
-    LLM_SERVICE_URL: str = "http://llm_service:8002"
-    VISION_SERVICE_URL: str = "http://vision_service:8003"
-    SPEECH_SERVICE_URL: str = "http://speech_service:8004"
-    SUMMARIZER_SERVICE_URL: str = "http://summarizer_service:8005"
+    MANGA_ANIME_SERVICE_URL: str = "http://manga_anime_service:8003"
 
     # ------------------------------------------------------------------
     # Timeouts HTTP (segundos)
     # ------------------------------------------------------------------
     SERVICE_CONNECT_TIMEOUT: float = 5.0
-    SERVICE_READ_TIMEOUT: float = 60.0   # LLM pode demorar mais
+    SERVICE_READ_TIMEOUT: float = 60.0   # Geração pode demorar mais
 
     # ------------------------------------------------------------------
     # Upload de arquivos

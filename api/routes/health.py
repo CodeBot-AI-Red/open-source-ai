@@ -12,11 +12,7 @@ from api.schemas.responses import HealthResponse, ServiceStatus
 router = APIRouter()
 
 _SERVICES = {
-    "nlp": settings.NLP_SERVICE_URL,
-    "llm": settings.LLM_SERVICE_URL,
-    "vision": settings.VISION_SERVICE_URL,
-    "speech": settings.SPEECH_SERVICE_URL,
-    "summarizer": settings.SUMMARIZER_SERVICE_URL,
+    "manga_anime_generator": settings.MANGA_ANIME_SERVICE_URL,
 }
 
 
@@ -38,6 +34,7 @@ async def health_check():
     """Verifica se a API está no ar (Kubernetes liveness probe)."""
     return {
         "status": "ok",
+        "service": settings.PROJECT_NAME,
         "version": settings.PROJECT_VERSION,
         "timestamp": datetime.now(tz=timezone.utc).isoformat(),
     }
@@ -46,9 +43,8 @@ async def health_check():
 @router.get("/ready", summary="Readiness probe")
 async def readiness_check():
     """
-    Verifica se a API e todos os serviços dependentes estão prontos
-    (Kubernetes readiness probe). Retorna 503 se algum serviço crítico
-    estiver inacessível.
+    Verifica se a API e os serviços de geração de Manga/Anime estão prontos
+    (Kubernetes readiness probe).
     """
     async with httpx.AsyncClient() as client:
         probes = await asyncio.gather(

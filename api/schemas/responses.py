@@ -1,11 +1,10 @@
-# api/schemas/responses.py
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
 
 # ---------------------------------------------------------------------------
-# Genérico
+# Generico
 # ---------------------------------------------------------------------------
 class ErrorResponse(BaseModel):
     error: str
@@ -14,86 +13,64 @@ class ErrorResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Text Analysis
+# Manga & Anime Image Generation Schemas
 # ---------------------------------------------------------------------------
-class SentimentResponse(BaseModel):
-    label: Literal["positive", "negative", "neutral", "mixed"]
-    score: float = Field(..., ge=0.0, le=1.0, description="Confiança do modelo (0–1)")
-    scores_by_label: Dict[str, float] = Field(default_factory=dict)
+class MangaAnimeGenerationResponse(BaseModel):
+    id: str = Field(..., description="ID único da geração da imagem")
+    created_at: float = Field(..., description="Timestamp UNIX de criação")
+    status: Literal["completed", "failed"] = Field("completed", description="Status do job de geração")
+    prompt_used: str = Field(..., description="Prompt final enriquecido utilizado pelo motor")
+    negative_prompt_used: str = Field(..., description="Prompt negativo final compilado")
+    style_preset: str = Field(..., description="Preset de estilo aplicado")
+    width: int = Field(..., description="Largura final da imagem em pixels")
+    height: int = Field(..., description="Altura final da imagem em pixels")
+    num_inference_steps: int = Field(..., description="Passos de difusão executados")
+    guidance_scale: float = Field(..., description="Escala de orientação CFG utilizada")
+    seed: int = Field(..., description="Semente aleatória utilizada")
+    sampler: str = Field(..., description="Sampler de amostragem utilizado")
+    color_mode: str = Field(..., description="Modo de cor (full_color, black_and_white, grayscale)")
+    panel_layout: Optional[str] = Field(None, description="Layout do painel de mangá")
+    upscale_factor: float = Field(..., description="Fator de super-resolução aplicado")
+    execution_time_ms: float = Field(..., description="Tempo total de processamento em milissegundos")
+    image_url_or_base64: str = Field(..., description="URL ou payload Base64/Data-URI da imagem gerada")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadados adicionais do motor")
 
 
-class Entity(BaseModel):
-    text: str
-    label: str
-    start: int
-    end: int
-    score: float
+class BatchMangaAnimeGenerationResponse(BaseModel):
+    total_generated: int
+    execution_time_ms: float
+    results: List[MangaAnimeGenerationResponse]
 
 
-class NERResponse(BaseModel):
-    entities: List[Entity]
-    total: int
+class StyleInfo(BaseModel):
+    name: str
+    display_name: str
+    description: str
+    default_color_mode: str
+    recommended_guidance: float
+    recommended_steps: int
 
 
-class ClassifyResponse(BaseModel):
-    label: str
-    score: float
-    all_labels: List[Dict[str, Any]] = Field(default_factory=list)
+class ListStylesResponse(BaseModel):
+    styles: List[StyleInfo]
+    aspect_ratios: List[str]
 
 
-# ---------------------------------------------------------------------------
-# Text Generation
-# ---------------------------------------------------------------------------
-class ChatResponse(BaseModel):
+class EnhancedPromptResponse(BaseModel):
+    original_prompt: str
+    compiled_positive_prompt: str
+    compiled_negative_prompt: str
+    style_preset: str
+
+
+class UpscaleResponse(BaseModel):
     id: str
-    model: str
-    message: str
-    finish_reason: Literal["stop", "length", "error"]
-    usage: Dict[str, int] = Field(
-        default_factory=dict,
-        description="Ex: {'prompt_tokens': 20, 'completion_tokens': 80, 'total_tokens': 100}",
-    )
-
-
-class CompletionResponse(BaseModel):
-    id: str
-    text: str
-    finish_reason: Literal["stop", "length", "error"]
-    usage: Dict[str, int] = Field(default_factory=dict)
-
-
-# ---------------------------------------------------------------------------
-# Image Analysis
-# ---------------------------------------------------------------------------
-class ClassificationResult(BaseModel):
-    label: str
-    score: float
-
-
-class FaceDetection(BaseModel):
-    count: int
-    bounding_boxes: List[Dict[str, int]]  # [{"x": 0, "y": 0, "w": 100, "h": 120}]
-
-
-class ImageAnalysisResponse(BaseModel):
-    task: str
-    result: Any  # ClassificationResult | FaceDetection | str
-
-
-# ---------------------------------------------------------------------------
-# Speech to Text
-# ---------------------------------------------------------------------------
-class WordTimestamp(BaseModel):
-    word: str
-    start: float
-    end: float
-
-
-class TranscribeResponse(BaseModel):
-    text: str
-    language: str
-    duration_seconds: Optional[float] = None
-    words: Optional[List[WordTimestamp]] = None
+    original_width: int
+    original_height: int
+    upscaled_width: int
+    upscaled_height: int
+    upscale_factor: float
+    image_url_or_base64: str
 
 
 # ---------------------------------------------------------------------------
