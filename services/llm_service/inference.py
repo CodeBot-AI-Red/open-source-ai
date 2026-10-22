@@ -20,6 +20,9 @@ class ChatRequest(BaseModel):
     messages: list[Message] = Field(..., min_length=1)
     max_tokens: int = Field(512, ge=1, le=4096)
     temperature: float = Field(0.7, ge=0.0, le=2.0)
+    top_p: float = Field(1.0, ge=0.0, le=1.0)
+    presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     stream: bool = False
 
 
@@ -27,6 +30,9 @@ class CompletionRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=8000)
     max_tokens: int = Field(256, ge=1, le=4096)
     temperature: float = Field(0.7, ge=0.0, le=2.0)
+    top_p: float = Field(1.0, ge=0.0, le=1.0)
+    presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
 
 
 app = FastAPI(title="Open Source AI LLM Service", version="2.0.0")
@@ -40,7 +46,14 @@ async def health() -> dict[str, str]:
 @app.post("/chat")
 async def chat_endpoint(body: ChatRequest):
     try:
-        result = chat([m.model_dump() for m in body.messages], GenerationConfig(body.max_tokens, body.temperature))
+        config = GenerationConfig(
+            max_tokens=body.max_tokens,
+            temperature=body.temperature,
+            top_p=body.top_p,
+            presence_penalty=body.presence_penalty,
+            frequency_penalty=body.frequency_penalty,
+        )
+        result = chat([m.model_dump() for m in body.messages], config)
     except PromptSafetyError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return result.__dict__
@@ -48,7 +61,14 @@ async def chat_endpoint(body: ChatRequest):
 
 @app.post("/complete")
 async def complete_endpoint(body: CompletionRequest):
-    result = chat([{"role": "user", "content": body.prompt}], GenerationConfig(body.max_tokens, body.temperature))
+    config = GenerationConfig(
+        max_tokens=body.max_tokens,
+        temperature=body.temperature,
+        top_p=body.top_p,
+        presence_penalty=body.presence_penalty,
+        frequency_penalty=body.frequency_penalty,
+    )
+    result = chat([{"role": "user", "content": body.prompt}], config)
     text, reason = trim_to_token_budget(result.message, body.max_tokens)
     return {"id": result.id.replace("chatcmpl", "cmpl"), "text": text, "finish_reason": reason, "usage": result.usage}
 
@@ -56,7 +76,14 @@ async def complete_endpoint(body: CompletionRequest):
 @app.post("/chat/stream")
 async def stream_chat_endpoint(body: ChatRequest):
     async def events():
-        result = chat([m.model_dump() for m in body.messages], GenerationConfig(body.max_tokens, body.temperature))
+        config = GenerationConfig(
+            max_tokens=body.max_tokens,
+            temperature=body.temperature,
+            top_p=body.top_p,
+            presence_penalty=body.presence_penalty,
+            frequency_penalty=body.frequency_penalty,
+        )
+        result = chat([m.model_dump() for m in body.messages], config)
         for token in result.message.split():
             yield json.dumps({"token": token + " "}, ensure_ascii=False) + "\n"
         yield json.dumps({"finish_reason": result.finish_reason, "usage": result.usage}, ensure_ascii=False) + "\n"

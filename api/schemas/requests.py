@@ -39,6 +39,9 @@ class ChatRequest(BaseModel):
     messages: List[ChatMessage] = Field(..., min_items=1)
     max_tokens: int = Field(512, ge=1, le=4096)
     temperature: float = Field(0.7, ge=0.0, le=2.0)
+    top_p: float = Field(1.0, ge=0.0, le=1.0)
+    presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     stream: bool = False
 
     model_config = {
@@ -47,6 +50,9 @@ class ChatRequest(BaseModel):
                 "messages": [{"role": "user", "content": "Explique machine learning em 3 frases."}],
                 "max_tokens": 256,
                 "temperature": 0.7,
+                "top_p": 0.9,
+                "presence_penalty": 0.0,
+                "frequency_penalty": 0.0,
                 "stream": False,
             }
         }
@@ -57,6 +63,9 @@ class CompletionRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=8000)
     max_tokens: int = Field(256, ge=1, le=4096)
     temperature: float = Field(0.7, ge=0.0, le=2.0)
+    top_p: float = Field(1.0, ge=0.0, le=1.0)
+    presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
 
 
 # ---------------------------------------------------------------------------
