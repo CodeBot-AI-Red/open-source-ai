@@ -5,8 +5,8 @@ from fastapi.responses import StreamingResponse
 
 from api.core.config import settings
 from api.core.dependencies import get_current_user, get_http_client
-from api.schemas.requests import ChatRequest, CompletionRequest
-from api.schemas.responses import ChatResponse, CompletionResponse
+from api.schemas.requests import ChatRequest, CompletionRequest, EmbeddingRequest
+from api.schemas.responses import ChatResponse, CompletionResponse, EmbeddingResponse, ModelInfoResponse
 
 router = APIRouter()
 
@@ -15,6 +15,29 @@ def _service_error(exc: Exception, route: str) -> HTTPException:
     if isinstance(exc, httpx.TimeoutException):
         return HTTPException(status_code=504, detail=f"Serviço LLM não respondeu a tempo ({route}).")
     return HTTPException(status_code=502, detail=f"Erro ao comunicar com o serviço LLM ({route}): {exc}")
+
+
+# ---------------------------------------------------------------------------
+# GET /generation/models
+# ---------------------------------------------------------------------------
+@router.get(
+    "/models",
+    response_model=ModelInfoResponse,
+    summary="Informações e Parâmetros dos Modelos da Plataforma",
+    description="Retorna a especificação detalhada de parâmetros (ex: 103.5B parâmetros totais) e arquitetura de todos os modelos da plataforma.",
+)
+async def get_models_info(
+    client: httpx.AsyncClient = Depends(get_http_client),
+):
+    try:
+        async with client:
+            r = await client.get(f"{settings.LLM_SERVICE_URL}/models")
+        r.raise_for_status()
+        return r.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text)
+    except Exception as exc:
+        raise _service_error(exc, "models")
 
 
 # ---------------------------------------------------------------------------
@@ -110,3 +133,31 @@ async def complete(
         raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text)
     except Exception as exc:
         raise _service_error(exc, "complete")
+
+
+# ---------------------------------------------------------------------------
+# POST /generation/embeddings
+# ---------------------------------------------------------------------------
+@router.post(
+    "/embeddings",
+    response_model=EmbeddingResponse,
+    summary="Geração de Embeddings Vetoriais",
+    description="Gera vetores densos para buscas semânticas, recuperação RAG e análise de similaridade.",
+)
+async def embeddings(
+    body: EmbeddingRequest,
+    user=Depends(get_current_user),
+    client: httpx.AsyncClient = Depends(get_http_client),
+):
+    try:
+        async with client:
+            r = await client.post(
+                f"{settings.LLM_SERVICE_URL}/embeddings",
+                json=body.model_dump(),
+            )
+        r.raise_for_status()
+        return r.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text)
+    except Exception as exc:
+        raise _service_error(exc, "embeddings")
