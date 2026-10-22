@@ -1,5 +1,5 @@
 # api/schemas/requests.py
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -66,6 +66,22 @@ class CompletionRequest(BaseModel):
     top_p: float = Field(1.0, ge=0.0, le=1.0)
     presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+
+
+class EmbeddingRequest(BaseModel):
+    input: Union[str, List[str]] = Field(..., description="Texto ou lista de textos para geração de embeddings vetoriais.")
+    model: str = Field("luzia-embed-large-v1", description="Identificador do modelo de embedding")
+    dimensions: int = Field(1536, ge=128, le=4096, description="Dimensão do vetor de saída")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "input": "Inteligência Artificial de Grande Porte",
+                "model": "luzia-embed-large-v1",
+                "dimensions": 1536,
+            }
+        }
+    }
 
 
 # ---------------------------------------------------------------------------

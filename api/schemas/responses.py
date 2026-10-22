@@ -42,7 +42,7 @@ class ClassifyResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Text Generation
+# Text Generation & Embeddings
 # ---------------------------------------------------------------------------
 class ChatResponse(BaseModel):
     id: str
@@ -60,6 +60,53 @@ class CompletionResponse(BaseModel):
     text: str
     finish_reason: Literal["stop", "length", "error"]
     usage: Dict[str, int] = Field(default_factory=dict)
+
+
+class EmbeddingData(BaseModel):
+    object: str = "embedding"
+    index: int
+    embedding: List[float]
+
+
+class EmbeddingResponse(BaseModel):
+    object: str = "list"
+    data: List[EmbeddingData]
+    model: str
+    usage: Dict[str, int]
+
+
+class SubserviceSpecResponse(BaseModel):
+    service: str
+    model: str
+    parameters: str
+    parameters_numeric: int
+    architecture: str
+    precision: str
+    description: str
+
+
+class LLMSpecResponse(BaseModel):
+    name: str
+    total_parameters: str
+    total_parameters_numeric: int
+    active_parameters_per_token: str
+    architecture: str
+    layers: int
+    hidden_dimension: int
+    attention_heads: int
+    kv_heads: int
+    context_window: int
+    precision_support: List[str]
+
+
+class ModelInfoResponse(BaseModel):
+    model: str
+    version: str
+    backend: str
+    total_platform_parameters: str
+    total_platform_parameters_numeric: int
+    llm_specs: LLMSpecResponse
+    subservices_specs: List[SubserviceSpecResponse]
 
 
 # ---------------------------------------------------------------------------

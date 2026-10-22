@@ -1,6 +1,9 @@
 import pytest
+from fastapi.testclient import TestClient
 
 from services.llm_service.chat_handler import GenerationConfig, PromptSafetyError, chat, count_tokens
+from services.llm_service.inference import app as llm_app
+from services.llm_service.model_loader import get_model_info
 
 
 def test_chat_returns_structured_portuguese_response():
@@ -57,3 +60,32 @@ def test_chat_blocks_advanced_jailbreak_patterns():
     for prompt in jailbreaks:
         with pytest.raises(PromptSafetyError):
             chat([{"role": "user", "content": prompt}])
+
+
+def test_model_info_parameter_breakdown():
+    info = get_model_info()
+    assert info.specs.total_platform_parameters_numeric == 103_500_000_000
+    assert "103.5B" in info.specs.total_platform_parameters_formatted
+    assert info.specs.llm.total_parameters_numeric == 70_000_000_000
+    assert info.specs.llm.context_window == 131072
+    assert len(info.specs.subservices) == 4
+
+
+def test_models_endpoint_returns_parameter_specs():
+    client = TestClient(llm_app)
+    response = client.get("/models")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_platform_parameters_numeric"] == 103_500_000_000
+    assert data["llm_specs"]["total_parameters_numeric"] == 70_000_000_000
+    assert len(data["subservices_specs"]) == 4
+
+
+def test_embeddings_endpoint_returns_normalized_vector():
+    client = TestClient(llm_app)
+    response = client.post("/embeddings", json={"input": "Plataforma de Inteligência Artificial de Grande Porte", "dimensions": 128})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["object"] == "list"
+    assert len(data["data"]) == 1
+    assert len(data["data"][0]["embedding"]) == 128
