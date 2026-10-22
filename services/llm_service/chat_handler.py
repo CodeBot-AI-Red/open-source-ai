@@ -25,6 +25,9 @@ class ChatMessage:
 class GenerationConfig:
     max_tokens: int = 512
     temperature: float = 0.7
+    top_p: float = 1.0
+    presence_penalty: float = 0.0
+    frequency_penalty: float = 0.0
     language: str = "pt-BR"
 
 
@@ -39,9 +42,9 @@ class ChatResult:
 
 _WORD_RE = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 _DANGEROUS_PATTERNS = (
-    re.compile(r"\b(ignore|ignorem|desconsidere)\b.*\b(instruções|instructions|sistema|system)\b", re.I),
-    re.compile(r"\b(revele|vaze|mostre|print)\b.*\b(prompt|segredo|secret|token|chave|key)\b", re.I),
-    re.compile(r"\b(system prompt|developer message|mensagem de sistema)\b", re.I),
+    re.compile(r"\b(ignore|ignorem|desconsidere|override|bypass)\b.*\b(instruções|instructions|sistema|system|regras|rules)\b", re.I),
+    re.compile(r"\b(revele|vaze|mostre|print|exfiltra|display|leak)\b.*\b(prompt|segredo|secret|token|chave|key|api_key)\b", re.I),
+    re.compile(r"\b(system prompt|developer message|mensagem de sistema|modo dan|jailbreak)\b", re.I),
 )
 
 
@@ -104,6 +107,13 @@ def _extract_last_user(messages: list[ChatMessage]) -> str:
     return messages[-1].content
 
 
+def _extract_system(messages: list[ChatMessage]) -> str | None:
+    for message in messages:
+        if message.role == "system":
+            return message.content
+    return None
+
+
 def _bulletize(text: str, max_items: int = 5) -> list[str]:
     parts = re.split(r"(?<=[.!?])\s+|;\s+|\n+", text)
     return [p.strip(" -") for p in parts if p.strip()][:max_items]
@@ -118,16 +128,19 @@ def generate_with_backend(messages: list[ChatMessage], config: GenerationConfig)
     development.
     """
     question = _extract_last_user(messages)
+    system_instruction = _extract_system(messages)
     lower = question.lower()
+
+    prefix = f"[Diretiva do Sistema: {system_instruction}]\n\n" if system_instruction else ""
 
     if any(word in lower for word in ("resuma", "sumarize", "summarize", "tl;dr")):
         bullets = _bulletize(question.replace("resuma", "", 1))
         core = "\n".join(f"- {item}" for item in bullets) or "- Não há conteúdo suficiente para resumir."
-        return f"Resumo objetivo:\n{core}\n\nPróximo passo sugerido: valide os pontos principais com a fonte original."
+        return f"{prefix}Resumo objetivo:\n{core}\n\nPróximo passo sugerido: valide os pontos principais com a fonte original."
 
     if any(word in lower for word in ("código", "codigo", "python", "javascript", "bug", "erro")):
         return (
-            "Posso ajudar com isso. Uma abordagem segura é:\n"
+            f"{prefix}Posso ajudar com isso. Uma abordagem segura é:\n"
             "1. Reproduzir o problema com um exemplo mínimo.\n"
             "2. Isolar entradas, saída esperada e saída real.\n"
             "3. Corrigir em pequenos passos com testes automatizados.\n"
@@ -138,7 +151,7 @@ def generate_with_backend(messages: list[ChatMessage], config: GenerationConfig)
     ideas = _bulletize(question, max_items=3)
     focus = "; ".join(ideas) if ideas else question
     return (
-        "Entendi. Vou responder de forma direta, prática e verificável.\n\n"
+        f"{prefix}Entendi. Vou responder de forma direta, prática e verificável.\n\n"
         f"Resposta: {focus}\n\n"
         "Recomendação: transforme isso em uma tarefa pequena, defina critérios de sucesso "
         "e teste o resultado antes de evoluir para a próxima melhoria."
